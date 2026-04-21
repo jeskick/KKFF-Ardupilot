@@ -55,6 +55,44 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AC_Fence/AC_Fence.h>
 
+const AP_Param::GroupInfo AP_OSD_RadarPeers::var_info[] = {
+    // @Param: A_EN
+    // @DisplayName: RADAR A enable
+    // @Description: Displays radar info for formation peer A
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("A_EN", 1, AP_OSD_RadarPeers, peer_a_en, 0),
+    // @Param: A_X
+    // @DisplayName: RADAR A X
+    // @Range: 0 29
+    AP_GROUPINFO("A_X", 2, AP_OSD_RadarPeers, peer_a_x, 0),
+    // @Param: A_Y
+    // @DisplayName: RADAR A Y
+    // @Range: 0 15
+    AP_GROUPINFO("A_Y", 3, AP_OSD_RadarPeers, peer_a_y, 0),
+
+    AP_GROUPINFO("B_EN", 4, AP_OSD_RadarPeers, peer_b_en, 0),
+    AP_GROUPINFO("B_X", 5, AP_OSD_RadarPeers, peer_b_x, 0),
+    AP_GROUPINFO("B_Y", 6, AP_OSD_RadarPeers, peer_b_y, 0),
+
+    AP_GROUPINFO("C_EN", 7, AP_OSD_RadarPeers, peer_c_en, 0),
+    AP_GROUPINFO("C_X", 8, AP_OSD_RadarPeers, peer_c_x, 0),
+    AP_GROUPINFO("C_Y", 9, AP_OSD_RadarPeers, peer_c_y, 0),
+
+    AP_GROUPINFO("D_EN", 10, AP_OSD_RadarPeers, peer_d_en, 0),
+    AP_GROUPINFO("D_X", 11, AP_OSD_RadarPeers, peer_d_x, 0),
+    AP_GROUPINFO("D_Y", 12, AP_OSD_RadarPeers, peer_d_y, 0),
+
+    AP_GROUPINFO("E_EN", 13, AP_OSD_RadarPeers, peer_e_en, 0),
+    AP_GROUPINFO("E_X", 14, AP_OSD_RadarPeers, peer_e_x, 0),
+    AP_GROUPINFO("E_Y", 15, AP_OSD_RadarPeers, peer_e_y, 0),
+
+    AP_GROUPINFO("F_EN", 16, AP_OSD_RadarPeers, peer_f_en, 0),
+    AP_GROUPINFO("F_X", 17, AP_OSD_RadarPeers, peer_f_x, 0),
+    AP_GROUPINFO("F_Y", 18, AP_OSD_RadarPeers, peer_f_y, 0),
+
+    AP_GROUPEND
+};
+
 #if AP_OSD_EXTENDED_LNK_STATS
 // We need to this file to access the CRSF telemetry objects which contains the link stats data
 #include <AP_RCProtocol/AP_RCProtocol_CRSF.h>   
@@ -1046,21 +1084,11 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 	AP_SUBGROUPINFO(rrpm, "RPM", 62, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
-    // @Param: RADAR_EN
-    // @DisplayName: RADAR_EN
-    // @Description: Displays iNav Radar info for peer aircraft
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: RADAR_X
-    // @DisplayName: RADAR_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: RADAR_Y
-    // @DisplayName: RADAR_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
-    AP_SUBGROUPINFO(radar, "RADAR", 63, AP_OSD_Screen, AP_OSD_Setting),
+    // @Group: RADAR
+    // @Path: AP_OSD_Screen.cpp
+    // @DisplayName: Formation radar OSD (peers A–F)
+    // Parameters appear as OSDn_RADAR_A_EN, RADAR_B_EN, … (was RADAR_* / RADAR2_* …; AP_Param idx must be <64 per group)
+    AP_SUBGROUPINFO(radar, "RADAR", 63, AP_OSD_Screen, AP_OSD_RadarPeers),
 
     AP_GROUPEND
 };
@@ -1811,42 +1839,55 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
     }
 }
 
-void AP_OSD_Screen::draw_radar(uint8_t x, uint8_t y)
+void AP_OSD_Screen::draw_radar_peer(uint8_t x, uint8_t y, uint8_t peer_id)
 {
-    static uint8_t id = 0;
-    static uint32_t last_peer_change = 0;
+#if AP_RADAR_ENABLED
+    if (backend == nullptr) {
+        return;
+    }
+    AP_Radar *const ap_radar = AP_Radar::get_singleton();
+    if (ap_radar == nullptr || peer_id >= RADAR_MAX_PEERS) {
+        return;
+    }
+
+    // Read AHRS under its lock only; do not call AP_Radar while holding ahrs
+    // semaphore (radar update may interact with AHRS and risks deadlock across threads).
     AP_AHRS &ahrs = AP::ahrs();
-    AP_Radar *ap_radar = AP_Radar::get_singleton();
-    WITH_SEMAPHORE(ahrs.get_semaphore());
     Location loc;
-    if (ahrs.get_location(loc) && ap_radar->get_peer_healthy(id)) {
-        const Location &peer_loc = ap_radar->get_peer(id).location;
-        uint16_t peer_heading = ap_radar->get_peer(id).heading;
-        float distance = loc.get_distance(peer_loc);
-        ftype vertical_distance;
-        if (!peer_loc.get_alt_distance(loc, vertical_distance)) {
-            vertical_distance = 0.0f;
+    int32_t yaw_cd;
+    {
+        WITH_SEMAPHORE(ahrs.get_semaphore());
+        if (!ahrs.get_location(loc)) {
+            return;
         }
-        int32_t angle = wrap_360_cd(loc.get_bearing_to(peer_loc) - ahrs.yaw_sensor);
-        int16_t relative_angle = wrap_360_cd((peer_heading * 100) - ahrs.yaw_sensor);
-        if (distance < 2.0f)
-        {
-            //avoid fast rotating arrow at small distances
-            angle = 0;
-        }
-        char arrow = get_arrow_font_index(angle);
-        char relative_arrow = get_arrow_font_index(relative_angle);
-        backend->write(x, y, false, "%c%c", relative_arrow, id + 65);
-        draw_vdistance(x+2, y, vertical_distance);
-        backend->write(x, y+1, false, "%c", arrow);
-        draw_distance(x+1, y+1, distance);
-    } else {
-        backend->write(x, y, true, "%c", id + 65);
+        yaw_cd = ahrs.yaw_sensor;
     }
-    if (AP_HAL::millis() - last_peer_change > 2000) {
-        id = ap_radar->get_next_healthy_peer(id);
-	    last_peer_change = AP_HAL::millis();
+
+    if (!ap_radar->get_peer_healthy(peer_id)) {
+        return;
     }
+    const radar_peer_t peer = ap_radar->get_peer(peer_id);
+    const Location &peer_loc = peer.location;
+    const uint16_t peer_heading = peer.heading;
+    const float distance = loc.get_distance(peer_loc);
+    ftype vertical_distance;
+    if (!peer_loc.get_alt_distance(loc, vertical_distance)) {
+        vertical_distance = 0.0f;
+    }
+    int32_t angle = wrap_360_cd(loc.get_bearing_to(peer_loc) - yaw_cd);
+    int16_t relative_angle = wrap_360_cd((peer_heading * 100) - yaw_cd);
+    if (distance < 2.0f) {
+        //avoid fast rotating arrow at small distances
+        angle = 0;
+    }
+    const char arrow = get_arrow_font_index(angle);
+    const char relative_arrow = get_arrow_font_index(relative_angle);
+    backend->write(x, y, false, "%c%c", relative_arrow, peer_id + 65);
+    draw_vdistance(x+2, y, vertical_distance);
+    backend->write(x, y+1, false, "%c", arrow);
+    draw_distance(x+1, y+1, distance);
+    // No radar data: display nothing (no placeholder)
+#endif  // AP_RADAR_ENABLED
 }
 
 void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
@@ -2707,7 +2748,24 @@ void AP_OSD_Screen::draw(void)
 #endif
 
 #if AP_RADAR_ENABLED
-    DRAW_SETTING(radar);
+    if (radar.peer_a_en) {
+        draw_radar_peer(radar.peer_a_x, radar.peer_a_y, 0);
+    }
+    if (radar.peer_b_en) {
+        draw_radar_peer(radar.peer_b_x, radar.peer_b_y, 1);
+    }
+    if (radar.peer_c_en) {
+        draw_radar_peer(radar.peer_c_x, radar.peer_c_y, 2);
+    }
+    if (radar.peer_d_en) {
+        draw_radar_peer(radar.peer_d_x, radar.peer_d_y, 3);
+    }
+    if (radar.peer_e_en) {
+        draw_radar_peer(radar.peer_e_x, radar.peer_e_y, 4);
+    }
+    if (radar.peer_f_en) {
+        draw_radar_peer(radar.peer_f_x, radar.peer_f_y, 5);
+    }
 #endif
 }
 #endif

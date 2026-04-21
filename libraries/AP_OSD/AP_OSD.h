@@ -81,6 +81,35 @@ private:
     const float default_ypos;
 };
 
+/*
+  Six formation-radar OSD slots under one parent group index (OSD screen idx must stay <64).
+  Full parameter names: OSDn_RADAR_A_*, RADAR_B_*, ... RADAR_F_* (peer_id 0..5).
+ */
+class AP_OSD_RadarPeers
+{
+public:
+    AP_Int8 peer_a_en;
+    AP_Int8 peer_a_x;
+    AP_Int8 peer_a_y;
+    AP_Int8 peer_b_en;
+    AP_Int8 peer_b_x;
+    AP_Int8 peer_b_y;
+    AP_Int8 peer_c_en;
+    AP_Int8 peer_c_x;
+    AP_Int8 peer_c_y;
+    AP_Int8 peer_d_en;
+    AP_Int8 peer_d_x;
+    AP_Int8 peer_d_y;
+    AP_Int8 peer_e_en;
+    AP_Int8 peer_e_x;
+    AP_Int8 peer_e_y;
+    AP_Int8 peer_f_en;
+    AP_Int8 peer_f_x;
+    AP_Int8 peer_f_y;
+
+    static const struct AP_Param::GroupInfo var_info[];
+};
+
 class AP_OSD;
 
 class AP_OSD_AbstractScreen
@@ -231,7 +260,7 @@ private:
     AP_OSD_Setting hgt_abvterr{false, 23, 7};
     AP_OSD_Setting fence{false, 14, 9};
     AP_OSD_Setting rngf;
-    AP_OSD_Setting radar;
+    AP_OSD_RadarPeers radar;
 #if HAL_PLUSCODE_ENABLE
     AP_OSD_Setting pluscode;
 #endif
@@ -282,7 +311,7 @@ private:
     void draw_gspeed(uint8_t x, uint8_t y);
     void draw_horizon(uint8_t x, uint8_t y);
     void draw_home(uint8_t x, uint8_t y);
-    void draw_radar(uint8_t x, uint8_t y);
+    void draw_radar_peer(uint8_t x, uint8_t y, uint8_t peer_id);
     void draw_throttle(uint8_t x, uint8_t y);
     void draw_heading(uint8_t x, uint8_t y);
 #if AP_RPM_ENABLED
