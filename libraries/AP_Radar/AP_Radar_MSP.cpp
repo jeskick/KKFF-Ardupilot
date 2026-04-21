@@ -55,8 +55,13 @@ void AP_Radar_MSP::update(void)
 // handle radar msp messages
 void AP_Radar_MSP::handle_msp(const MSP::msp_radar_pos_message_t &pkt)
 {
+    // radar_no is 1-based; ignore invalid/corrupt packet IDs
+    if (pkt.radar_no == 0 || pkt.radar_no > RADAR_MAX_PEERS) {
+        return;
+    }
+
     // record peer state
-    uint8_t id = pkt.radar_no;
+    uint8_t id = pkt.radar_no - 1U;
     peers[id].radar_no = pkt.radar_no;
     peers[id].state = pkt.state;
     peers[id].location = Location(pkt.lat, pkt.lon, pkt.alt, Location::AltFrame::ABSOLUTE);
