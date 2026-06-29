@@ -118,6 +118,17 @@ bool Plane::auto_takeoff_check(void)
     if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
         ((now - takeoff_state.last_tkoff_arm_time) >= wait_time_ms)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
+        if (g.takeoff_rc_throttle && control_mode == &mode_takeoff) {
+            int8_t min_throttle = aparm.throttle_min.get();
+            int8_t max_throttle = aparm.throttle_max.get();
+            if (min_throttle < 0 && !allow_reverse_thrust()) {
+                min_throttle = 0;
+            }
+            takeoff_state.rc_throttle_max = constrain_float(get_throttle_input(true), min_throttle, max_throttle);
+            if (takeoff_state.rc_throttle_max > 0) {
+                gcs().send_text(MAV_SEVERITY_INFO, "** THR MAX %d%% **", (int)lroundf(takeoff_state.rc_throttle_max));
+            }
+        }
         takeoff_state.launchTimerStarted = false;
         takeoff_state.last_tkoff_arm_time = 0;
         takeoff_state.start_time_ms = now;
@@ -294,6 +305,51 @@ return_zero:
         auto_state.fbwa_tdrag_takeoff_mode = false;
     }
     return 0;
+}
+
+/*
+  true when TAKEOFF mode is waiting for TKOFF_THR_MINACC shake detection
+  and RC throttle should be used instead of zero throttle
+ */
+bool Plane::takeoff_rc_throttle_wait_active(void)
+{
+    return g.takeoff_rc_throttle != 0 &&
+           in_preLaunch_flight_stage() &&
+           !is_zero(g.takeoff_throttle_min_accel);
+}
+
+/*
+  true when a RC throttle value was captured to use as TKOFF_THR_MAX
+ */
+bool Plane::takeoff_use_rc_throttle_max(void) const
+{
+    return g.takeoff_rc_throttle != 0 &&
+           control_mode == &mode_takeoff &&
+           takeoff_state.rc_throttle_max > 0;
+}
+
+/*
+  read RC throttle during shake-to-arm wait, capture as takeoff max throttle
+ */
+float Plane::get_takeoff_rc_throttle(void)
+{
+    int8_t min_throttle = aparm.throttle_min.get();
+    int8_t max_throttle = aparm.throttle_max.get();
+    if (min_throttle < 0 && !allow_reverse_thrust()) {
+        min_throttle = 0;
+    }
+
+    const float thr = constrain_float(get_throttle_input(true), min_throttle, max_throttle);
+    takeoff_state.rc_throttle_max = thr;
+
+    if (thr > 0) {
+        const uint32_t now = millis();
+        if (now - takeoff_state.last_rc_thr_report_ms >= 500) {
+            takeoff_state.last_rc_thr_report_ms = now;
+            gcs().send_text(MAV_SEVERITY_INFO, "** THR %d%% **", (int)lroundf(thr));
+        }
+    }
+    return thr;
 }
 
 #if AP_LANDINGGEAR_ENABLED

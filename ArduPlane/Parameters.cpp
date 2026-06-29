@@ -131,6 +131,13 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(takeoff_throttle_min_accel,     "TKOFF_THR_MINACC",  0),
 
+    // @Param: TKOFF_RC_THR
+    // @DisplayName: Takeoff RC throttle while waiting for shake
+    // @Description: When enabled together with TKOFF_THR_MINACC for shake-to-arm, TAKEOFF mode reads the RC throttle stick in real time while waiting for the acceleration check. That value is used for motor output during the wait, and is captured as the effective TKOFF_THR_MAX for this takeoff once launch is detected. Has no effect when TKOFF_THR_MINACC is zero.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    GSCALAR(takeoff_rc_throttle,            "TKOFF_RC_THR",      0),
+
     // @Param: TKOFF_THR_DELAY
     // @DisplayName: Takeoff throttle delay
     // @Description: This parameter sets the time delay (in 1/10ths of a second) that the ground speed check is delayed after the forward acceleration check controlled by TKOFF_THR_MINACC has passed. For hand launches with pusher propellers it is essential that this is set to a value of no less than 2 (0.2 seconds) to ensure that the aircraft is safely clear of the throwers arm before the motor can start. For bungee launches a larger value can be used (such as 30) to give time for the bungee to release from the aircraft before the motor is started.

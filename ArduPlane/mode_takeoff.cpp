@@ -63,8 +63,14 @@ ModeTakeoff::ModeTakeoff() :
 bool ModeTakeoff::_enter()
 {
     takeoff_started = false;
+    plane.takeoff_state.rc_throttle_max = 0;
 
     return true;
+}
+
+void ModeTakeoff::_exit()
+{
+    plane.takeoff_state.rc_throttle_max = 0;
 }
 
 void ModeTakeoff::update()

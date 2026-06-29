@@ -523,7 +523,9 @@ float Plane::apply_throttle_limits(float throttle_in)
         (flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING);
 
     if (use_takeoff_throttle_max) {
-        if (aparm.takeoff_throttle_max != 0) {
+        if (takeoff_use_rc_throttle_max()) {
+            max_throttle = (int8_t)constrain_int16(lroundf(takeoff_state.rc_throttle_max), 0, 100);
+        } else if (aparm.takeoff_throttle_max != 0) {
             max_throttle = aparm.takeoff_throttle_max.get();
         }
     } else if (landing.is_flaring()) {
@@ -548,6 +550,7 @@ void Plane::set_throttle(void)
 {
 
     if (!arming.is_armed_and_safety_off()) {
+        takeoff_state.rc_throttle_max = 0;
         // Always set 0 scaled even if overriding to zero pwm.
         // This ensures slew limits and other functions using the scaled value pick up in the correct place
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
@@ -563,7 +566,11 @@ void Plane::set_throttle(void)
     }
 
     if (suppress_throttle()) {
-        if (g.throttle_suppress_manual) {
+        if (takeoff_rc_throttle_wait_active()) {
+            // RC throttle passthrough while waiting for TKOFF_THR_MINACC shake detection
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_takeoff_rc_throttle());
+
+        } else if (g.throttle_suppress_manual) {
             // manual pass through of throttle while throttle is suppressed
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
 
