@@ -451,6 +451,8 @@ private:
         uint8_t accel_event_counter;
         uint32_t accel_event_ms;
         uint32_t start_time_ms;
+        uint32_t last_rc_thr_report_ms;
+        float rc_throttle_max;
         bool waiting_for_rudder_neutral;
         float throttle_lim_max;
         float throttle_lim_min;
@@ -1160,6 +1162,9 @@ private:
     void takeoff_calc_pitch(void);
     void takeoff_calc_throttle();
     int8_t takeoff_tail_hold(void);
+    bool takeoff_rc_throttle_wait_active(void);
+    bool takeoff_use_rc_throttle_max(void) const;
+    float get_takeoff_rc_throttle(void);
     int16_t get_takeoff_pitch_min_cd(void);
     void landing_gear_update(void);
     bool check_takeoff_timeout(void);

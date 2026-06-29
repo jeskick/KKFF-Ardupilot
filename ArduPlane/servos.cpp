@@ -628,7 +628,10 @@ void Plane::set_throttle(void)
     }
 
     if (suppress_throttle()) {
-        if (g.throttle_suppress_manual) {
+        if (takeoff_rc_throttle_wait_active()) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_takeoff_rc_throttle());
+
+        } else if (g.throttle_suppress_manual) {
             // manual pass through of throttle while throttle is suppressed
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
 
