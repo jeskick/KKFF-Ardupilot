@@ -966,6 +966,7 @@ protected:
     Location start_loc;
 
     bool _enter() override;
+    void _exit() override;
 
 private:
 

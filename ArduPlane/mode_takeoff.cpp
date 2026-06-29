@@ -64,8 +64,14 @@ bool ModeTakeoff::_enter()
 {
     takeoff_mode_setup = false;
     have_autoenabled_fences = false;
+    plane.takeoff_state.rc_throttle_max = 0;
 
     return true;
+}
+
+void ModeTakeoff::_exit()
+{
+    plane.takeoff_state.rc_throttle_max = 0;
 }
 
 void ModeTakeoff::update()
