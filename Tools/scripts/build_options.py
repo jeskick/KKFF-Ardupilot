@@ -112,11 +112,12 @@ BUILD_OPTIONS = [
     Feature('Notify', 'NOTIFY_NEOPIXEL', 'AP_NOTIFY_NEOPIXEL_ENABLED', 'Enable NeoPixel LED strings', 0, None),  # noqa
 
     Feature('MSP', 'MSP', 'HAL_MSP_ENABLED', 'Enable MSP telemetry and MSP OSD', 0, 'OSD'),
-    Feature('MSP', 'MSP_SENSORS', 'HAL_MSP_SENSORS_ENABLED', 'Enable MSP sensors', 0, 'MSP_GPS,MSP_BARO,MSP_COMPASS,MSP_AIRSPEED,MSP,MSP_OPTICALFLOW,MSP_RANGEFINDER,OSD'),   # NOQA: E501
+    Feature('MSP', 'MSP_SENSORS', 'HAL_MSP_SENSORS_ENABLED', 'Enable MSP sensors', 0, 'MSP_GPS,MSP_BARO,MSP_COMPASS,MSP_AIRSPEED,MSP,MSP_OPTICALFLOW,MSP_RANGEFINDER,MSP_RADAR,OSD'),   # NOQA: E501
     Feature('MSP', 'MSP_GPS', 'HAL_MSP_GPS_ENABLED', 'Enable MSP GPS', 0, 'MSP,OSD'),
     Feature('MSP', 'MSP_COMPASS', 'AP_COMPASS_MSP_ENABLED', 'Enable MSP compass', 0, 'MSP,OSD'),
     Feature('MSP', 'MSP_OPTICALFLOW', 'HAL_MSP_OPTICALFLOW_ENABLED', 'Enable MSP OpticalFlow', 0, 'MSP,OSD,OPTICALFLOW'), # also OPTFLOW dep   # NOQA: E501
     Feature('MSP', 'MSP_RANGEFINDER', 'HAL_MSP_RANGEFINDER_ENABLED', 'Enable MSP rangefinder', 0, 'MSP,OSD,RANGEFINDER'),
+    Feature('MSP', 'MSP_RADAR', 'HAL_MSP_RADAR_ENABLED', 'Enable MSP iNav Radar', 0, 'MSP,OSD,RADAR'),   # NOQA: E501
     Feature('MSP', 'MSP_DISPLAYPORT', 'HAL_WITH_MSP_DISPLAYPORT', 'Enable MSP DisplayPort OSD (aka CANVAS MODE)', 0, 'MSP,OSD'),   # NOQA: E501
     Feature('MSP', 'DISPLAYPORT_INAV_FONTS', 'AP_MSP_INAV_FONTS_ENABLED', 'Enable INAV Fonts Translation for DisplayPort', 0, 'MSP_DISPLAYPORT,MSP,OSD'),  # NOQA: E501
 
@@ -388,6 +389,7 @@ BUILD_OPTIONS = [
     Feature('Baro', 'BARO_PROBEXT', 'AP_BARO_PROBE_EXTERNAL_I2C_BUSES', 'Enable Probing of External i2c buses', 0, None),
     Feature('Baro', 'BARO_THRUST_COMP', 'AP_BARO_THST_COMP_ENABLED', 'Enable thrust compensation on BARO1', 0, None),
 
+    Feature('Sensors', 'RADAR', 'AP_RADAR_ENABLED', 'Enable iNav Radar', 0, None),
     Feature('Sensors', 'RPM', 'AP_RPM_ENABLED', 'Enable RPM sensors', 0, None),
     Feature('Sensors', 'RPM_EFI', 'AP_RPM_EFI_ENABLED', 'Enable RPM EFI sensors', 0, 'RPM,EFI'),
     Feature('Sensors', 'RPM_ESC_TELEM', 'AP_RPM_ESC_TELEM_ENABLED', 'Enable RPM ESC Telemetry sensors', 0, 'RPM'),
