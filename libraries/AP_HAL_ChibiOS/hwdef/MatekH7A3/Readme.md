@@ -80,21 +80,25 @@ The PWM is in 5 groups:
 
 ## Battery Monitoring
 
-The board has 2x built-in voltage dividers and 2x current ADC. support external 3.3V based current sensor
+The board has an onboard INA2xx current/voltage monitor on I2C (0x45). No current calibration is required for the primary battery.
 
-The correct battery setting parameters are set by default and are:
+Primary battery defaults (set in firmware):
 
-- BATT_MONITOR 4
+- BATT_MONITOR 21 (INA2xx)
+- BATT_SHUNT 0.00025
+- BATT_MAX_AMPS 164
+- BATT_I2C_BUS 0
+- BATT_I2C_ADDR 0 (auto-probe, finds 0x45)
 
-- BATT_VOLT_PIN 10
-- BATT_CURR_PIN 11
-- BATT_VOLT_MULT 21.0 ("Vbat" pad support 5.5~30V input, limited by onboard regulator chips)
-- BATT_AMP_PERVLT X  ("Curr" pad, set it according to external current sensor spec)
+Optional secondary monitoring on VB2/CU2 analog pads (disabled by default):
 
+- BATT2_MONITOR 4 (enable manually if needed)
 - BATT2_VOLT_PIN 18
 - BATT2_CURR_PIN 8
-- BATT2_VOLT_MULT 21.0  ("VB2" pad support Max.69V voltage sense)
-- BATT_AMP_PERVLT X ("CU2" pad, set it according to external current sensor spec)
+- BATT2_VOLT_MULT 21.0  ("VB2" pad supports up to 69V voltage sense)
+- BATT2_AMP_PERVLT X ("CU2" pad, set according to external current sensor spec)
+
+External 3.3V analog current sensors can also be used on the Vbat/Curr pads by setting BATT_MONITOR to 4 and configuring the analog parameters.
 
 ## Compass
 
