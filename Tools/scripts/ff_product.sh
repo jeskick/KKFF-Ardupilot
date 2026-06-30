@@ -7,22 +7,26 @@ cd "$ROOT"
 
 GCC_PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10-2020-q4-major/bin"
 PY="${PYTHON:-python3}"
+GIT="${GIT:-/usr/bin/git}"
 
-PRODUCT_BRANCHES=(
-    formationflt-4.5.7
-    ardupilot.4.8.5dev_FF_RADAR
-    tkoff-4.5.7
-    tkoff-4.8.0-dev
-)
-
-FEATURE_BRANCHES=(
-    feature/formation-radar
-    feature/takeoff-rc-throttle
-)
-
+# Layer 1: upstream anchors (read-only)
 BASE_BRANCHES=(
-    base/plane-4.5.7
-    base/plane-4.8.0-dev
+    base/ardupilot.4.5.7
+    base/ardupilot.4.8.5dev
+)
+
+# Layer 2: independent feature modules (cherry-pick / merge onto any version)
+FEATURE_BRANCHES=(
+    feature/FF_RADAR
+    feature/FF_TKOFF
+)
+
+# Layer 3: product = base + feature(s)
+PRODUCT_BRANCHES=(
+    ardupilot.4.5.7_FF_RADAR
+    ardupilot.4.5.7_FF_RADAR_TKOFF
+    ardupilot.4.8.5dev_FF_RADAR
+    ardupilot.4.8.5dev_FF_RADAR_TKOFF
 )
 
 usage() {
@@ -31,57 +35,58 @@ Usage: $0 list
        $0 checkout <branch>
        $0 build <board> [branch]
 
-Product branches (version + features):
-  formationflt-4.5.7           ArduPlane 4.5.7 + formation radar (legacy name)
-  ardupilot.4.8.5dev_FF_RADAR  ArduPlane 4.8.x-dev + formation radar (+ H7A3 INA2xx)
-  tkoff-4.5.7                  4.5.7 + formation + TKOFF_RC_THR
-  tkoff-4.8.0-dev              4.8.x-dev + formation + TKOFF_RC_THR
+Branch layout (3 layers):
+  base/ardupilot.*              Pure ArduPilot version anchor
+  feature/FF_RADAR              Formation radar only (independent module)
+  feature/FF_TKOFF              Hand-launch TKOFF_RC_THR only (independent module)
 
-Feature branches (for isolated development):
-  feature/formation-radar
-  feature/takeoff-rc-throttle
+Products (version + features):
+  ardupilot.4.5.7_FF_RADAR           4.5.7 + formation radar
+  ardupilot.4.5.7_FF_RADAR_TKOFF     4.5.7 + formation + TKOFF
+  ardupilot.4.8.5dev_FF_RADAR        4.8.x-dev + formation (+ H7A3 INA2xx)
+  ardupilot.4.8.5dev_FF_RADAR_TKOFF  4.8.x-dev + formation + TKOFF
 EOF
 }
 
 cmd_list() {
-    echo "=== Base (read-only anchors) ==="
+    echo "=== Layer 1: Base (upstream anchors, do not develop here) ==="
     for b in "${BASE_BRANCHES[@]}"; do
-        if git show -s --format='%h %s' "$b" >/dev/null 2>&1; then
-            printf '  %-28s ' "$b"
-            git show -s --format='%h %s' "$b"
+        if "$GIT" show -s --format='%h %s' "$b" >/dev/null 2>&1; then
+            printf '  %-36s ' "$b"
+            "$GIT" show -s --format='%h %s' "$b"
         else
             echo "  $b (missing)"
         fi
     done
     echo ""
-    echo "=== Features ==="
+    echo "=== Layer 2: Features (independent modules) ==="
     for b in "${FEATURE_BRANCHES[@]}"; do
-        if git show -s --format='%h %s' "$b" >/dev/null 2>&1; then
-            printf '  %-28s ' "$b"
-            git show -s --format='%h %s' "$b"
+        if "$GIT" show -s --format='%h %s' "$b" >/dev/null 2>&1; then
+            printf '  %-36s ' "$b"
+            "$GIT" show -s --format='%h %s' "$b"
         else
             echo "  $b (missing)"
         fi
     done
     echo ""
-    echo "=== Products (checkout & build) ==="
+    echo "=== Layer 3: Products (checkout & build) ==="
     for b in "${PRODUCT_BRANCHES[@]}"; do
-        if git show -s --format='%h %s' "$b" >/dev/null 2>&1; then
-            printf '  %-28s ' "$b"
-            git show -s --format='%h %s' "$b"
+        if "$GIT" show -s --format='%h %s' "$b" >/dev/null 2>&1; then
+            printf '  %-36s ' "$b"
+            "$GIT" show -s --format='%h %s' "$b"
         else
             echo "  $b (missing)"
         fi
     done
     echo ""
-    echo "Current: $(git branch --show-current) @ $(git rev-parse --short HEAD)"
+    echo "Current: $("$GIT" branch --show-current) @ $("$GIT" rev-parse --short HEAD)"
 }
 
 cmd_checkout() {
     local branch="$1"
-    git checkout "$branch"
+    "$GIT" checkout "$branch"
     echo "Checked out: $branch"
-    git log -1 --oneline
+    "$GIT" log -1 --oneline
 }
 
 cmd_build() {

@@ -1,135 +1,109 @@
 # FFardupilot 开发分支说明
 
-本仓库在 ArduPilot 官方源码上叠加 **编队雷达** 与 **手抛油门** 等自定义功能。  
-分支按 **版本基线** 与 **功能** 两层组织，换电脑 `git clone` 后按本文操作即可继续开发。
+本仓库在 ArduPilot 官方源码上叠加 **编队雷达（FF_RADAR）** 与 **手抛油门（FF_TKOFF）** 等独立模块。  
+分支分 **三层**：`base` → `feature` → `product`。总览见根目录 **`FFARDUPILOT.md`**。
 
-## 分支结构
+## 三层结构
 
 ```
-upstream/master (ArduPilot 官方，只读参考)
+upstream/master
     │
-    ├── base/plane-4.5.7          ← 标签 Plane-4.5.7
-    ├── base/plane-4.8.0-dev      ← upstream 4.8.0-dev 快照
+    ├─ base/ardupilot.4.5.7              纯净 4.5.7
+    ├─ base/ardupilot.4.8.5dev          纯净 4.8.x-dev
     │
-    ├── feature/formation-radar   ← 编队功能（可 cherry-pick）
-    ├── feature/takeoff-rc-throttle ← 手抛 TKOFF_RC_THR（可 cherry-pick）
+    ├─ feature/FF_RADAR                 编队雷达（独立模块）
+    ├─ feature/FF_TKOFF                 手抛 TKOFF（独立模块）
     │
-    ├── formationflt-4.5.7                  ← 产品：4.5.7 + 编队（旧名）
-    ├── ardupilot.4.8.5dev_FF_RADAR         ← 产品：4.8.x-dev + 编队
-    ├── tkoff-4.5.7                         ← 产品：4.5.7 + 编队 + TKOFF
-    └── tkoff-4.8.0-dev                      ← 产品：4.8.x-dev + 编队 + TKOFF
+    ├─ ardupilot.4.5.7_FF_RADAR
+    ├─ ardupilot.4.5.7_FF_RADAR_TKOFF
+    ├─ ardupilot.4.8.5dev_FF_RADAR      ← 当前主线
+    └─ ardupilot.4.8.5dev_FF_RADAR_TKOFF
 ```
 
-### 产品分支命名规则
-
-| 分支名 | 含义 |
-|--------|------|
-| `ardupilot.<版本>dev_FF_RADAR` | 官方 ArduPilot + 编队雷达 |
-| `formationflt-*` / `tkoff-*` | 旧命名，逐步废弃 |
-
-### 分支含义
-
-| 分支 | 用途 |
-|------|------|
-| `base/*` | 纯净 ArduPilot 版本锚点，**不要在此开发** |
-| `feature/*` | 单一功能提交，便于移植到新版本 |
-| `ardupilot.*_FF_RADAR` | 编队成品线（当前推荐命名） |
-| `formationflt-*` | 编队成品线（旧名） |
-| `tkoff-*` | 编队 + 手抛油门实验成品线 |
+| 层级 | 分支 | 用途 |
+|------|------|------|
+| base | `base/ardupilot.*` | 官方版本锚点，**不要开发** |
+| feature | `feature/FF_RADAR` | 只改编队，改完 cherry-pick 到产品 |
+| feature | `feature/FF_TKOFF` | 只改 TKOFF，改完 cherry-pick 到 `*_TKOFF` 产品 |
+| product | `ardupilot.<ver>_FF_*` | 日常编译刷机 |
 
 ## 工作目录（worktree）
 
-| 目录 | 检出分支 | 做什么 |
-|------|----------|--------|
-| `FFardupilot` | `ardupilot.4.8.5dev_FF_RADAR` | 主编译环境（H7A3 等 4.8 板） |
-| `FFardupilot-tkoff-rc` | `feature/takeoff-rc-throttle` | 仅改 TKOFF 功能（基于 4.5.7 编队） |
-
-创建 worktree 示例：
+| 目录 | 分支 | 用途 |
+|------|------|------|
+| `FFardupilot` | `ardupilot.4.8.5dev_FF_RADAR` | 主编译（4.8 + 编队） |
+| `FFardupilot-tkoff-rc` | `feature/FF_TKOFF` | 只改 TKOFF 模块 |
+| `FFardupilot-FF_RADAR`（可选） | `feature/FF_RADAR` | 只改编队模块 |
 
 ```bash
-git worktree add ../FFardupilot-tkoff-rc feature/takeoff-rc-throttle
-git worktree add ../FFardupilot-457 formationflt-4.5.7
+git worktree add ../FFardupilot-FF_RADAR feature/FF_RADAR
+git worktree add ../FFardupilot-tkoff-rc feature/FF_TKOFF
 ```
 
-## 快速切换与编译
+## 快速编译
 
 ```bash
-# 查看所有产品与功能分支
 ./Tools/scripts/ff_product.sh list
 
-# 切换到某产品分支并编译
-./Tools/scripts/ff_product.sh checkout ardupilot.4.8.5dev_FF_RADAR
-./Tools/scripts/ff_product.sh build MatekH7A3-Wing
-
-./Tools/scripts/ff_product.sh checkout tkoff-4.5.7
-./Tools/scripts/ff_product.sh build MatekF405-Wing
+./Tools/scripts/ff_product.sh build MatekH7A3-Wing ardupilot.4.8.5dev_FF_RADAR
+./Tools/scripts/ff_product.sh build MatekF405-Wing ardupilot.4.5.7_FF_RADAR
+./Tools/scripts/ff_product.sh build MatekF405-Wing ardupilot.4.5.7_FF_RADAR_TKOFF
+./Tools/scripts/ff_product.sh build MatekH7A3-Wing ardupilot.4.8.5dev_FF_RADAR_TKOFF
 ```
 
-手动方式：
-
-```bash
-git checkout ardupilot.4.8.5dev_FF_RADAR
-./waf configure --board MatekH7A3-Wing
-./waf plane
-```
-
-固件输出：`build/<板名>/bin/arduplane_with_bl.hex`
+固件：`build/<板名>/bin/arduplane_with_bl.hex`
 
 ## 开发流程
 
-### 只改编队功能
+### 改编队模块
 
 ```bash
-git checkout ardupilot.4.8.5dev_FF_RADAR   # 或 formationflt-4.5.7
-# 修改 libraries/AP_Radar/ libraries/AP_OSD/ ...
-git commit -m "formation: <说明>"
+git checkout feature/FF_RADAR    # 或 cd FFardupilot-FF_RADAR
+# 改 libraries/AP_Radar/ libraries/AP_OSD/ ...
+git commit -m "feature/FF_RADAR: <说明>"
+
+# 合并到各产品分支
+git checkout ardupilot.4.8.5dev_FF_RADAR
+git cherry-pick <commit>
 ```
 
-### 只改 TKOFF 手抛油门
+### 改 TKOFF 模块
 
 ```bash
-cd FFardupilot-tkoff-rc    # 或 checkout feature/takeoff-rc-throttle
-# 修改 ArduPlane/takeoff.cpp servos.cpp ...
-git commit -m "feature: <说明>"
+cd FFardupilot-tkoff-rc    # feature/FF_TKOFF
+# 改 ArduPlane/takeoff.cpp servos.cpp ...
+git commit -m "feature/FF_TKOFF: <说明>"
+
+git checkout ardupilot.4.8.5dev_FF_RADAR_TKOFF
+git cherry-pick <commit>
 ```
 
-验证通过后，将提交 cherry-pick 到各版本产品分支：
-
-```bash
-git checkout tkoff-4.8.0-dev
-git cherry-pick <commit-hash>
-```
-
-### 升级 ArduPilot 版本（例：4.9.0）
+### 升级 ArduPilot 版本
 
 ```bash
 git fetch upstream
-git branch base/plane-4.9.0-dev <upstream-commit>
-git checkout -b formationflt-4.9.0-dev base/plane-4.9.0-dev
-git cherry-pick feature/formation-radar   # 或按提交逐个 pick，解决冲突
+git branch base/ardupilot.4.9.0dev <upstream-commit>
+git checkout -b ardupilot.4.9.0dev_FF_RADAR base/ardupilot.4.9.0dev
+git cherry-pick feature/FF_RADAR   # 解决冲突后提交
 ```
 
-## 编队相关参数
+## 同步官方代码
 
-- `RADAR_TYPE = 1`（MSP）
-- `OSDn_RADAR_A_EN` … `RADAR_F_*`（多同伴 OSD 槽位）
+见 `FFARDUPILOT.md` 第七节：`git fetch upstream` + `git merge upstream/master`  
+**不要用** GitHub 的 Sync fork。
 
-## TKOFF 相关参数
+## 编队 / TKOFF 参数
 
-- `TKOFF_RC_THR = 1`（需配合 `TKOFF_THR_MINACC > 0`）
-- 等待抖动期间 RC 油门实时输出，并捕获为本次起飞最大油门
+- `RADAR_TYPE = 1`，`OSDn_RADAR_A_EN` … `RADAR_F_*`
+- `TKOFF_RC_THR = 1`（需 `TKOFF_THR_MINACC > 0`）
 
-## 新电脑克隆后
+## 新电脑克隆
 
 ```bash
-git clone <你的远程仓库> FFardupilot
+git clone https://github.com/jeskick/KKFF-Ardupilot.git FFardupilot
 cd FFardupilot
+git checkout ardupilot.4.8.5dev_FF_RADAR
 git submodule update --init --recursive
-git worktree add ../FFardupilot-tkoff-rc feature/takeoff-rc-throttle
+git worktree add ../FFardupilot-tkoff-rc feature/FF_TKOFF
 ./Tools/scripts/ff_product.sh list
 ```
-
-## 旧分支说明
-
-- `ff_publish_clean`：历史发布快照（4.5.7 大提交），**不再用于日常开发**
-- `formationflt-4.5.7` 上 `44fbef9d72` 仅为旧编译产物提交，产品分支已指向 `c0505c3292`

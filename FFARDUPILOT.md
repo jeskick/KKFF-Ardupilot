@@ -16,45 +16,73 @@
 | 基线版本 | **4.5.7**（稳定）、**4.8.0-dev**（开发，当前主线） |
 | 车机类型 | 主要维护 **ArduPlane**（固定翼） |
 
-### 2. 分支结构（三层）
+### 2. 分支结构（三层：base → feature → product）
 
 ```
-upstream/master（官方，只读参考）
+upstream/master（ArduPilot 官方，只读）
     │
-    ├── base/plane-4.5.7              纯净 4.5.7 锚点
-    ├── base/plane-4.8.0-dev          纯净 4.8.0-dev 锚点
+    ├─ Layer 1  base/                    纯净官方版本锚点
+    │     ├── base/ardupilot.4.5.7
+    │     └── base/ardupilot.4.8.5dev
     │
-    ├── feature/formation-radar       编队功能（单功能，便于移植）
-    ├── feature/takeoff-rc-throttle   手抛 TKOFF_RC_THR（单功能）
+    ├─ Layer 2  feature/                 独立功能模块（可移植）
+    │     ├── feature/FF_RADAR           编队雷达 OSD（仅此功能）
+    │     └── feature/FF_TKOFF           手抛 TKOFF_RC_THR（仅此功能）
     │
-    ├── formationflt-4.5.7              ← 产品：4.5.7 + 编队（旧名，待统一）
-    ├── ardupilot.4.8.5dev_FF_RADAR     ← 产品：4.8.x-dev + 编队  ← 当前主线
-    ├── tkoff-4.5.7                     ← 产品：4.5.7 + 编队 + TKOFF
-    └── tkoff-4.8.0-dev                  ← 产品：4.8.x-dev + 编队 + TKOFF
+    └─ Layer 3  ardupilot.*              产品 = 版本 + 功能组合
+          ├── ardupilot.4.5.7_FF_RADAR
+          ├── ardupilot.4.5.7_FF_RADAR_TKOFF
+          ├── ardupilot.4.8.5dev_FF_RADAR          ← 当前主线
+          └── ardupilot.4.8.5dev_FF_RADAR_TKOFF
 ```
 
-### 产品分支命名规则
+**组合关系：**
 
-| 分支名 | 含义 |
-|--------|------|
-| `ardupilot.<版本>dev_FF_RADAR` | 官方 ArduPilot + 编队雷达（FF = FormationFlight） |
-| `ardupilot.<版本>dev_FF_RADAR_TKOFF` | 上者 + 手抛油门（规划中，`tkoff-4.8.0-dev` 待改名） |
-| `formationflt-*` / `tkoff-*` | 旧命名，逐步废弃 |
+```
+ardupilot.4.5.7_FF_RADAR
+    = base/ardupilot.4.5.7 + feature/FF_RADAR
 
-| 分支类型 | 用途 |
-|----------|------|
-| `base/*` | 版本锚点，**不要在此开发** |
-| `feature/*` | 单一功能，改完后 cherry-pick 到各版本产品分支 |
-| `formationflt-*` | 编队成品线（旧名） |
-| `ardupilot.*_FF_RADAR` | 编队成品线（新命名） |
-| `tkoff-*` | 编队 + 手抛油门实验成品线 |
+ardupilot.4.5.7_FF_RADAR_TKOFF
+    = ardupilot.4.5.7_FF_RADAR + feature/FF_TKOFF
+
+ardupilot.4.8.5dev_FF_RADAR
+    = base/ardupilot.4.8.5dev + feature/FF_RADAR（4.8 移植）+ H7A3 板级适配
+
+ardupilot.4.8.5dev_FF_RADAR_TKOFF
+    = ardupilot.4.8.5dev_FF_RADAR + feature/FF_TKOFF（4.8 移植）
+```
+
+### 命名规则
+
+| 前缀 | 含义 | 示例 |
+|------|------|------|
+| `base/ardupilot.<版本>` | 纯净 ArduPilot，**不在此开发** | `base/ardupilot.4.5.7` |
+| `feature/FF_<名>` | 独立二次开发模块 | `feature/FF_RADAR` |
+| `ardupilot.<版本>_FF_<功能>` | 产品分支 | `ardupilot.4.8.5dev_FF_RADAR` |
+| `_TKOFF` 后缀 | 在编队基础上叠加手抛功能 | `..._FF_RADAR_TKOFF` |
+
+### 各层职责
+
+| 层级 | 改什么 | 怎么合并到产品 |
+|------|--------|----------------|
+| **feature/FF_RADAR** | `libraries/AP_Radar/`、OSD、MSP | cherry-pick 到各版本产品分支 |
+| **feature/FF_TKOFF** | `ArduPlane/takeoff.cpp` 等 | cherry-pick 到 `*_TKOFF` 产品分支 |
+| **产品分支** | 板级 hwdef、文档、版本适配 | 日常编译刷机用这条线 |
 
 ### 3. 工作目录（worktree）
 
 | 目录 | 分支 | 用途 |
 |------|------|------|
-| `FFardupilot` | `ardupilot.4.8.5dev_FF_RADAR` | 主编译环境（H7A3 等 4.8 板） |
-| `FFardupilot-tkoff-rc` | `feature/takeoff-rc-throttle` | 单独开发 TKOFF 功能（基于 4.5.7 编队） |
+| `FFardupilot` | `ardupilot.4.8.5dev_FF_RADAR` | 主编译（H7A3 等 4.8 板） |
+| `FFardupilot-tkoff-rc` | `feature/FF_TKOFF` | 只改 TKOFF 模块 |
+| `FFardupilot-FF_RADAR`（可选） | `feature/FF_RADAR` | 只改编队模块 |
+
+创建 worktree 示例：
+
+```bash
+git worktree add ../FFardupilot-FF_RADAR feature/FF_RADAR
+git worktree add ../FFardupilot-tkoff-rc feature/FF_TKOFF
+```
 
 ---
 
@@ -82,7 +110,7 @@ upstream/master（官方，只读参考）
 | `ArduPlane/Plane.*` `system.cpp` `Parameters.*` | Plane 集成 |
 | `docs/formationflight_osd_radar_multipeer.md` | 详细设计说明 |
 
-**所在分支：** `feature/formation-radar`；已合并进所有 `formationflt-*` 和 `tkoff-*` 产品分支。
+**所在分支：** `feature/FF_RADAR`；已合并进所有 `ardupilot.*_FF_RADAR*` 产品分支。
 
 ---
 
@@ -104,7 +132,7 @@ upstream/master（官方，只读参考）
 | `ArduPlane/mode_takeoff.cpp` `mode.h` | 模式进入/退出重置 |
 | `ArduPlane/Plane.h` `Parameters.*` | 参数与状态 |
 
-**所在分支：** `feature/takeoff-rc-throttle`；已合并进 `tkoff-4.5.7`、`tkoff-4.8.0-dev`。**未**包含在 `formationflt-*` 中。
+**所在分支：** `feature/FF_TKOFF`；已合并进 `ardupilot.*_FF_RADAR_TKOFF` 产品分支。
 
 ---
 
@@ -129,20 +157,20 @@ upstream/master（官方，只读参考）
 | `libraries/AP_HAL_ChibiOS/hwdef/MatekH7A3/hwdef.inc` | 硬件默认（Wing 板共用） |
 | `libraries/AP_HAL_ChibiOS/hwdef/MatekH7A3*/README.md` | 板级说明 |
 
-**所在分支：** `ardupilot.4.8.5dev_FF_RADAR`（及基于它衍生的 `tkoff-4.8.0-dev`）。
+**所在分支：** `ardupilot.4.8.5dev_FF_RADAR`（及 `ardupilot.4.8.5dev_FF_RADAR_TKOFF`）。
 
 ---
 
 ## 三、产品分支对照表（怎么选）
 
-| 我要… | 检出分支 | 典型板型 | ArduPlane 版本 |
-|--------|----------|----------|----------------|
-| 编队 + H7A3 + 板载电流计 | `ardupilot.4.8.5dev_FF_RADAR` | `MatekH7A3-Wing` | 4.8.x-dev |
-| 只要编队（4.5.7 稳定） | `formationflt-4.5.7` | `MatekF405-Wing` | 4.5.7 |
-| 编队 + 手抛油门（4.8） | `tkoff-4.8.0-dev` | `MatekH7A3-Wing` | 4.8.0-dev |
-| 编队 + 手抛油门（4.5.7） | `tkoff-4.5.7` | `MatekF405-Wing` | 4.5.7 |
-| 只改编队逻辑 | `feature/formation-radar` | — | — |
-| 只改 TKOFF | `feature/takeoff-rc-throttle` | — | — |
+| 我要… | 产品分支 | 典型板型 |
+|--------|----------|----------|
+| 4.8 + 编队 + H7A3 电流计 | `ardupilot.4.8.5dev_FF_RADAR` | `MatekH7A3-Wing` |
+| 4.5.7 + 编队 | `ardupilot.4.5.7_FF_RADAR` | `MatekF405-Wing` |
+| 4.5.7 + 编队 + TKOFF | `ardupilot.4.5.7_FF_RADAR_TKOFF` | `MatekF405-Wing` |
+| 4.8 + 编队 + TKOFF | `ardupilot.4.8.5dev_FF_RADAR_TKOFF` | `MatekH7A3-Wing` |
+| 只改编队模块 | `feature/FF_RADAR` | — |
+| 只改 TKOFF 模块 | `feature/FF_TKOFF` | — |
 
 ---
 
@@ -165,10 +193,13 @@ upstream/master（官方，只读参考）
 ./Tools/scripts/ff_product.sh build MatekH7A3-Wing ardupilot.4.8.5dev_FF_RADAR
 
 # 编队 + TKOFF（4.8）
-./Tools/scripts/ff_product.sh build MatekH7A3-Wing tkoff-4.8.0-dev
+./Tools/scripts/ff_product.sh build MatekH7A3-Wing ardupilot.4.8.5dev_FF_RADAR_TKOFF
 
 # 编队（4.5.7 F405）
-./Tools/scripts/ff_product.sh build MatekF405-Wing formationflt-4.5.7
+./Tools/scripts/ff_product.sh build MatekF405-Wing ardupilot.4.5.7_FF_RADAR
+
+# 4.8 + 编队 + TKOFF
+./Tools/scripts/ff_product.sh build MatekH7A3-Wing ardupilot.4.8.5dev_FF_RADAR_TKOFF
 ```
 
 固件输出：
@@ -190,7 +221,7 @@ export PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH"
 
 ## 五、修改汇总（相对官方 ArduPilot）
 
-### 4.8.x-dev 产品分支 `ardupilot.4.8.5dev_FF_RADAR` 相对 `base/plane-4.8.0-dev`
+### 4.8.x-dev 产品 `ardupilot.4.8.5dev_FF_RADAR` 相对 `base/ardupilot.4.8.5dev`
 
 | 提交 | 内容 |
 |------|------|
@@ -198,14 +229,14 @@ export PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH"
 | `de6ffc2ad9` | 分支说明 `docs/DEVELOPMENT.md` + 编译脚本 `ff_product.sh` |
 | `395c5aaf22` | H7A3 默认 INA2xx I2C 电流计 |
 
-### 4.5.7 产品分支 `formationflt-4.5.7` 相对 `base/plane-4.5.7`
+### 4.5.7 产品 `ardupilot.4.5.7_FF_RADAR` 相对 `base/ardupilot.4.5.7`
 
 | 提交 | 内容 |
 |------|------|
 | `a4332e2f38` | FormationFlight 合入 |
 | `c0505c3292` | 多同伴雷达 OSD 与安全检查增强 |
 
-### TKOFF 功能（`tkoff-*` 分支在编队之上额外包含）
+### TKOFF 功能（`ardupilot.*_FF_RADAR_TKOFF` 在编队之上额外包含）
 
 | 提交 | 内容 |
 |------|------|
@@ -217,10 +248,11 @@ export PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH"
 
 | 任务 | 操作 |
 |------|------|
-| 改编队 | 在 `ardupilot.4.8.5dev_FF_RADAR` 改 `libraries/AP_Radar/` 等 → 提交 |
-| 改 TKOFF | 在 `FFardupilot-tkoff-rc` 改 `ArduPlane/takeoff.cpp` 等 → cherry-pick 到 `tkoff-*` |
+| 改编队模块 | 在 `feature/FF_RADAR` 改 → cherry-pick 到各 `*_FF_RADAR*` 产品 |
+| 改 TKOFF 模块 | 在 `FFardupilot-tkoff-rc`（`feature/FF_TKOFF`）改 → cherry-pick 到 `*_TKOFF` 产品 |
+| 改编队+刷机 | 直接在 `ardupilot.4.8.5dev_FF_RADAR` 改并提交 |
 | 同步官方小更新 | 见下方 **第七节**（`fetch upstream` + `merge`） |
-| 升级 ArduPilot 大版本 | 新建 `base/plane-x.y.z` → cherry-pick `feature/*` → 新建 `formationflt-x.y.z` |
+| 升级 ArduPilot 大版本 | 新建 `base/ardupilot.x.y` → cherry-pick `feature/FF_*` → 新建 `ardupilot.x.y_FF_*` 产品 |
 | 新电脑开始 | `git clone` → `submodule update --init --recursive` → `ff_product.sh list` |
 
 更细的分支与 cherry-pick 说明见 **`docs/DEVELOPMENT.md`**。
@@ -284,10 +316,10 @@ cd /home/kk/FFardupilot
 
 ```bash
 /usr/bin/git fetch upstream
-/usr/bin/git checkout formationflt-4.5.7
-/usr/bin/git merge Plane-4.5.7    # 或 upstream 上对应稳定标签的最新修复分支
+/usr/bin/git checkout ardupilot.4.5.7_FF_RADAR
+/usr/bin/git merge Plane-4.5.7
 ./Tools/scripts/ff_product.sh build MatekF405-Wing
-/usr/bin/git push jeskick formationflt-4.5.7
+/usr/bin/git push jeskick ardupilot.4.5.7_FF_RADAR
 ```
 
 ### 合并冲突时优先保留自己的文件
@@ -347,4 +379,4 @@ git push -u jeskick ardupilot.4.8.5dev_FF_RADAR
 - `ff_publish_clean`：历史 4.5.7 大发布快照
 - 仅含编译产物、无功能差异的旧提交
 
-日常请使用 **`ardupilot.*_FF_RADAR`** 产品分支（旧名 `formationflt-*` / `tkoff-*` 仍可用）。
+日常请使用 **产品分支** `ardupilot.*_FF_*`；独立开发用 **功能分支** `feature/FF_*`。
