@@ -27,24 +27,33 @@ upstream/master（官方，只读参考）
     ├── feature/formation-radar       编队功能（单功能，便于移植）
     ├── feature/takeoff-rc-throttle   手抛 TKOFF_RC_THR（单功能）
     │
-    ├── formationflt-4.5.7            产品：4.5.7 + 编队
-    ├── formationflt-4.8.0-dev        产品：4.8.0-dev + 编队 + H7A3 电流计  ← 当前主线
-    ├── tkoff-4.5.7                   产品：4.5.7 + 编队 + TKOFF
-    └── tkoff-4.8.0-dev               产品：4.8.0-dev + 编队 + TKOFF
+    ├── formationflt-4.5.7              ← 产品：4.5.7 + 编队（旧名，待统一）
+    ├── ardupilot.4.8.5dev_FF_RADAR     ← 产品：4.8.x-dev + 编队  ← 当前主线
+    ├── tkoff-4.5.7                     ← 产品：4.5.7 + 编队 + TKOFF
+    └── tkoff-4.8.0-dev                  ← 产品：4.8.x-dev + 编队 + TKOFF
 ```
+
+### 产品分支命名规则
+
+| 分支名 | 含义 |
+|--------|------|
+| `ardupilot.<版本>dev_FF_RADAR` | 官方 ArduPilot + 编队雷达（FF = FormationFlight） |
+| `ardupilot.<版本>dev_FF_RADAR_TKOFF` | 上者 + 手抛油门（规划中，`tkoff-4.8.0-dev` 待改名） |
+| `formationflt-*` / `tkoff-*` | 旧命名，逐步废弃 |
 
 | 分支类型 | 用途 |
 |----------|------|
 | `base/*` | 版本锚点，**不要在此开发** |
 | `feature/*` | 单一功能，改完后 cherry-pick 到各版本产品分支 |
-| `formationflt-*` | 只要编队（+ 4.8 上的 H7A3 硬件适配） |
-| `tkoff-*` | 编队 + 手抛油门，实验用 |
+| `formationflt-*` | 编队成品线（旧名） |
+| `ardupilot.*_FF_RADAR` | 编队成品线（新命名） |
+| `tkoff-*` | 编队 + 手抛油门实验成品线 |
 
 ### 3. 工作目录（worktree）
 
 | 目录 | 分支 | 用途 |
 |------|------|------|
-| `FFardupilot` | `formationflt-4.8.0-dev` | 主编译环境（H7A3 等 4.8 板） |
+| `FFardupilot` | `ardupilot.4.8.5dev_FF_RADAR` | 主编译环境（H7A3 等 4.8 板） |
 | `FFardupilot-tkoff-rc` | `feature/takeoff-rc-throttle` | 单独开发 TKOFF 功能（基于 4.5.7 编队） |
 
 ---
@@ -120,7 +129,7 @@ upstream/master（官方，只读参考）
 | `libraries/AP_HAL_ChibiOS/hwdef/MatekH7A3/hwdef.inc` | 硬件默认（Wing 板共用） |
 | `libraries/AP_HAL_ChibiOS/hwdef/MatekH7A3*/README.md` | 板级说明 |
 
-**所在分支：** 目前仅在 `formationflt-4.8.0-dev`（及基于它衍生的分支）。
+**所在分支：** `ardupilot.4.8.5dev_FF_RADAR`（及基于它衍生的 `tkoff-4.8.0-dev`）。
 
 ---
 
@@ -128,7 +137,7 @@ upstream/master（官方，只读参考）
 
 | 我要… | 检出分支 | 典型板型 | ArduPlane 版本 |
 |--------|----------|----------|----------------|
-| 编队 + H7A3 官方 dev + 板载电流计 | `formationflt-4.8.0-dev` | `MatekH7A3-Wing` | 4.8.0-dev |
+| 编队 + H7A3 + 板载电流计 | `ardupilot.4.8.5dev_FF_RADAR` | `MatekH7A3-Wing` | 4.8.x-dev |
 | 只要编队（4.5.7 稳定） | `formationflt-4.5.7` | `MatekF405-Wing` | 4.5.7 |
 | 编队 + 手抛油门（4.8） | `tkoff-4.8.0-dev` | `MatekH7A3-Wing` | 4.8.0-dev |
 | 编队 + 手抛油门（4.5.7） | `tkoff-4.5.7` | `MatekF405-Wing` | 4.5.7 |
@@ -153,7 +162,7 @@ upstream/master（官方，只读参考）
 ./Tools/scripts/ff_product.sh list
 
 # 切到产品分支并编译
-./Tools/scripts/ff_product.sh build MatekH7A3-Wing formationflt-4.8.0-dev
+./Tools/scripts/ff_product.sh build MatekH7A3-Wing ardupilot.4.8.5dev_FF_RADAR
 
 # 编队 + TKOFF（4.8）
 ./Tools/scripts/ff_product.sh build MatekH7A3-Wing tkoff-4.8.0-dev
@@ -171,7 +180,7 @@ build/<板名>/bin/arduplane_with_bl.hex
 ### 方式 B：手动 waf
 
 ```bash
-git checkout formationflt-4.8.0-dev
+git checkout ardupilot.4.8.5dev_FF_RADAR
 export PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH"
 ./waf configure --board MatekH7A3-Wing
 ./waf plane
@@ -181,7 +190,7 @@ export PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH"
 
 ## 五、修改汇总（相对官方 ArduPilot）
 
-### 4.8.0-dev 产品分支 `formationflt-4.8.0-dev` 相对 `base/plane-4.8.0-dev`
+### 4.8.x-dev 产品分支 `ardupilot.4.8.5dev_FF_RADAR` 相对 `base/plane-4.8.0-dev`
 
 | 提交 | 内容 |
 |------|------|
@@ -208,7 +217,7 @@ export PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH"
 
 | 任务 | 操作 |
 |------|------|
-| 改编队 | 在 `formationflt-4.8.0-dev` 改 `libraries/AP_Radar/` 等 → 提交 |
+| 改编队 | 在 `ardupilot.4.8.5dev_FF_RADAR` 改 `libraries/AP_Radar/` 等 → 提交 |
 | 改 TKOFF | 在 `FFardupilot-tkoff-rc` 改 `ArduPlane/takeoff.cpp` 等 → cherry-pick 到 `tkoff-*` |
 | 同步官方小更新 | 见下方 **第七节**（`fetch upstream` + `merge`） |
 | 升级 ArduPilot 大版本 | 新建 `base/plane-x.y.z` → cherry-pick `feature/*` → 新建 `formationflt-x.y.z` |
@@ -248,7 +257,7 @@ cd /home/kk/FFardupilot
 # 建议用系统 git（~/.local/git 可能缺 git-remote-https）
 /usr/bin/git fetch upstream
 
-/usr/bin/git checkout formationflt-4.8.0-dev
+/usr/bin/git checkout ardupilot.4.8.5dev_FF_RADAR
 /usr/bin/git merge upstream/master
 ```
 
@@ -268,7 +277,7 @@ cd /home/kk/FFardupilot
 推到自己 fork：
 
 ```bash
-/usr/bin/git push jeskick formationflt-4.8.0-dev
+/usr/bin/git push jeskick ardupilot.4.8.5dev_FF_RADAR
 ```
 
 ### 4.5.7 稳定线同步
@@ -297,8 +306,8 @@ cd /home/kk/FFardupilot
 
 ```bash
 /usr/bin/git fetch upstream
-/usr/bin/git log --oneline formationflt-4.8.0-dev..upstream/master   # 官方有、你还没有的
-/usr/bin/git log --oneline upstream/master..formationflt-4.8.0-dev   # 你自己的定制提交
+/usr/bin/git log --oneline ardupilot.4.8.5dev_FF_RADAR..upstream/master   # 官方有、你还没有的
+/usr/bin/git log --oneline upstream/master..ardupilot.4.8.5dev_FF_RADAR   # 你自己的定制提交
 ```
 
 ---
@@ -328,7 +337,7 @@ cd /home/kk/FFardupilot
 推送产品分支示例：
 
 ```bash
-git push -u origin formationflt-4.8.0-dev
+git push -u jeskick ardupilot.4.8.5dev_FF_RADAR
 ```
 
 ---
@@ -338,4 +347,4 @@ git push -u origin formationflt-4.8.0-dev
 - `ff_publish_clean`：历史 4.5.7 大发布快照
 - 仅含编译产物、无功能差异的旧提交
 
-日常请使用 **`formationflt-*`** 或 **`tkoff-*`** 产品分支。
+日常请使用 **`ardupilot.*_FF_RADAR`** 产品分支（旧名 `formationflt-*` / `tkoff-*` 仍可用）。

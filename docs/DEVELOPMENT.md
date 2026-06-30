@@ -14,11 +14,18 @@ upstream/master (ArduPilot 官方，只读参考)
     ├── feature/formation-radar   ← 编队功能（可 cherry-pick）
     ├── feature/takeoff-rc-throttle ← 手抛 TKOFF_RC_THR（可 cherry-pick）
     │
-    ├── formationflt-4.5.7        ← 产品：4.5.7 + 编队
-    ├── formationflt-4.8.0-dev    ← 产品：4.8.0-dev + 编队
-    ├── tkoff-4.5.7               ← 产品：4.5.7 + 编队 + TKOFF
-    └── tkoff-4.8.0-dev           ← 产品：4.8.0-dev + 编队 + TKOFF
+    ├── formationflt-4.5.7                  ← 产品：4.5.7 + 编队（旧名）
+    ├── ardupilot.4.8.5dev_FF_RADAR         ← 产品：4.8.x-dev + 编队
+    ├── tkoff-4.5.7                         ← 产品：4.5.7 + 编队 + TKOFF
+    └── tkoff-4.8.0-dev                      ← 产品：4.8.x-dev + 编队 + TKOFF
 ```
+
+### 产品分支命名规则
+
+| 分支名 | 含义 |
+|--------|------|
+| `ardupilot.<版本>dev_FF_RADAR` | 官方 ArduPilot + 编队雷达 |
+| `formationflt-*` / `tkoff-*` | 旧命名，逐步废弃 |
 
 ### 分支含义
 
@@ -26,14 +33,15 @@ upstream/master (ArduPilot 官方，只读参考)
 |------|------|
 | `base/*` | 纯净 ArduPilot 版本锚点，**不要在此开发** |
 | `feature/*` | 单一功能提交，便于移植到新版本 |
-| `formationflt-*` | 编队成品线，日常编译编队固件 |
+| `ardupilot.*_FF_RADAR` | 编队成品线（当前推荐命名） |
+| `formationflt-*` | 编队成品线（旧名） |
 | `tkoff-*` | 编队 + 手抛油门实验成品线 |
 
 ## 工作目录（worktree）
 
 | 目录 | 检出分支 | 做什么 |
 |------|----------|--------|
-| `FFardupilot` | `formationflt-4.8.0-dev` | 主编译环境（H7A3 等 4.8 板） |
+| `FFardupilot` | `ardupilot.4.8.5dev_FF_RADAR` | 主编译环境（H7A3 等 4.8 板） |
 | `FFardupilot-tkoff-rc` | `feature/takeoff-rc-throttle` | 仅改 TKOFF 功能（基于 4.5.7 编队） |
 
 创建 worktree 示例：
@@ -50,7 +58,7 @@ git worktree add ../FFardupilot-457 formationflt-4.5.7
 ./Tools/scripts/ff_product.sh list
 
 # 切换到某产品分支并编译
-./Tools/scripts/ff_product.sh checkout formationflt-4.8.0-dev
+./Tools/scripts/ff_product.sh checkout ardupilot.4.8.5dev_FF_RADAR
 ./Tools/scripts/ff_product.sh build MatekH7A3-Wing
 
 ./Tools/scripts/ff_product.sh checkout tkoff-4.5.7
@@ -60,7 +68,7 @@ git worktree add ../FFardupilot-457 formationflt-4.5.7
 手动方式：
 
 ```bash
-git checkout formationflt-4.8.0-dev
+git checkout ardupilot.4.8.5dev_FF_RADAR
 ./waf configure --board MatekH7A3-Wing
 ./waf plane
 ```
@@ -72,7 +80,7 @@ git checkout formationflt-4.8.0-dev
 ### 只改编队功能
 
 ```bash
-git checkout formationflt-4.8.0-dev   # 或 formationflt-4.5.7
+git checkout ardupilot.4.8.5dev_FF_RADAR   # 或 formationflt-4.5.7
 # 修改 libraries/AP_Radar/ libraries/AP_OSD/ ...
 git commit -m "formation: <说明>"
 ```

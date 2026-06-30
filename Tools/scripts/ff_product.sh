@@ -10,7 +10,7 @@ PY="${PYTHON:-python3}"
 
 PRODUCT_BRANCHES=(
     formationflt-4.5.7
-    formationflt-4.8.0-dev
+    ardupilot.4.8.5dev_FF_RADAR
     tkoff-4.5.7
     tkoff-4.8.0-dev
 )
@@ -32,10 +32,10 @@ Usage: $0 list
        $0 build <board> [branch]
 
 Product branches (version + features):
-  formationflt-4.5.7     ArduPlane 4.5.7 + formation radar
-  formationflt-4.8.0-dev ArduPlane 4.8.0-dev + formation radar
-  tkoff-4.5.7            4.5.7 + formation + TKOFF_RC_THR
-  tkoff-4.8.0-dev        4.8.0-dev + formation + TKOFF_RC_THR
+  formationflt-4.5.7           ArduPlane 4.5.7 + formation radar (legacy name)
+  ardupilot.4.8.5dev_FF_RADAR  ArduPlane 4.8.x-dev + formation radar (+ H7A3 INA2xx)
+  tkoff-4.5.7                  4.5.7 + formation + TKOFF_RC_THR
+  tkoff-4.8.0-dev              4.8.x-dev + formation + TKOFF_RC_THR
 
 Feature branches (for isolated development):
   feature/formation-radar
